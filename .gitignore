@@ -1,0 +1,71 @@
+# -------------------------
+# Python general ignores
+# -------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+env/
+ENV/
+*.log
+*.pot
+*.pyc
+*.pkl
+
+# -------------------------
+# Jupyter & IDE
+# -------------------------
+.ipynb_checkpoints
+.vscode/
+.idea/
+*.code-workspace
+
+# -------------------------
+# OS / System
+# -------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# -------------------------
+# Environment & Config Files
+# -------------------------
+.env
+*.env
+secrets.toml
+.streamlit/secrets.toml
+
+# -------------------------
+# Data & Cache
+# -------------------------
+*.csv
+*.xlsx
+*.json
+*.db
+*.sqlite3
+*.h5
+*.parquet
+*.feather
+*.zip
+*.tar
+*.gz
+*.bak
+
+# -------------------------
+# Project-specific (Trading App)
+# -------------------------
+pending_setups.csv
+live_alerts_log.csv
+seen_keys.txt
+backtest_results/
+__results__/
+.cache/
+output/
+logs/
