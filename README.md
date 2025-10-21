@@ -51,7 +51,7 @@ ecommerce/
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone https://github.com/Pathogenic-cmd/streamlit-ecommerce.git
+git clone https://github.com/Pathogenic-cmd/my-online-store.git
 cd streamlit-ecommerce
 ```
 
