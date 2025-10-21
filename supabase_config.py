@@ -1,26 +1,15 @@
-from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
 
-load_dotenv()
-
+# No dotenv needed on Streamlit Cloud
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
 
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("❌ Missing SUPABASE_URL or SUPABASE_ANON_KEY. Did you add them in Streamlit Secrets?")
+
 def init_supabase() -> Client:
-    assert SUPABASE_URL and SUPABASE_KEY, "Missing SUPABASE_URL or SUPABASE_KEY"
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
-
+# Optional: create a global client
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
-# Example: update the product with id = 1
-product_id = 4  # change this to the actual product id
-new_image_url = "https://rflyaqswtuuoukmvfhfc.supabase.co/storage/v1/object/public/product-mages/2150170582.jpg"
-response = supabase.table("products").update({
-    "image_url": new_image_url
-}).eq("id", product_id).execute()
-
-print("✅ Updated:", response)
