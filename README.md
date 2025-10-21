@@ -128,7 +128,7 @@ You can easily change:
 
 ## 🧑‍💻 Author
 
-**Doinag**  
+**Daniel Kofi Debrah Awuma**  
 Passionate Python developer building modern cloud-connected apps.
 
 ---
