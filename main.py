@@ -127,8 +127,10 @@ with st.sidebar:
                     st.success("🎉 Account created! Please check your email to verify.")
 
     else:
+        from datetime import datetime, timezone
+
         try:
-            # Fetch user's profile
+            # ✅ Fetch user's profile fresh (disable cache)
             profile_res = supabase.table("users").select("*").eq("id", user.id).execute()
             profile = profile_res.data[0] if profile_res.data else None
 
@@ -141,23 +143,20 @@ with st.sidebar:
                 last_login = None
                 created_at = None
 
-            # ✅ Determine if this is the user's first login
-            is_first_login = not last_login or (created_at and last_login == created_at)
-
-            if is_first_login:
+            # ✅ Determine first-time login more reliably
+            if last_login is None:
                 st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
             else:
                 st.success(f"👋 Welcome back, {full_name}!")
 
-            # ✅ Update last_login AFTER greeting
-            from datetime import datetime
-            supabase.table("users").update({
-                "last_login": datetime.utcnow().isoformat()
-            }).eq("id", user.id).execute()
+            # ✅ Update last_login after greeting
+            now = datetime.now(timezone.utc).isoformat()
+            supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
 
-            # 🕒 (Optional) Display last login info
-            if last_login:
-                st.caption(f"🕒 Last login: {last_login[:19].replace('T', ' ')} UTC")
+            # ✅ Verify update by re-fetching
+            updated = supabase.table("users").select("last_login").eq("id", user.id).execute()
+            if updated.data and updated.data[0].get("last_login"):
+                st.caption(f"🕒 Last login: {updated.data[0]['last_login'][:19].replace('T',' ')} UTC")
 
         except Exception as e:
             st.warning(f"⚠️ Unable to fetch user profile: {e}")
@@ -166,6 +165,7 @@ with st.sidebar:
         if st.button("Logout"):
             logout()
             st.rerun()
+
 
 
 page = st.sidebar.selectbox("Navigate", ["Shop", "Analytics","About"])
