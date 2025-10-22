@@ -99,14 +99,13 @@ st.markdown('<a name="top"></a>', unsafe_allow_html=True)
 
 user = get_current_user()
 
-# 🧱 SIDEBAR AUTH SECTION
+from datetime import datetime, timezone
+import time
+
 with st.sidebar:
     st.markdown("## 🔐 Account")
 
     if not user:
-        # -------------------------------
-        # 🔹 LOGIN FORM
-        # -------------------------------
         with st.expander("Login", expanded=False):
             email = st.text_input("Email", key="login_email")
             password = st.text_input("Password", type="password", key="login_pw")
@@ -118,14 +117,10 @@ with st.sidebar:
                     st.success("✅ Logged in successfully!")
                     st.rerun()
 
-        # -------------------------------
-        # 🔹 SIGN UP FORM
-        # -------------------------------
         with st.expander("Create Account"):
             new_email = st.text_input("Email", key="signup_email")
             new_password = st.text_input("Password", type="password", key="signup_pw")
             full_name = st.text_input("Full Name")
-
             if st.button("Sign Up"):
                 res = signup(new_email, new_password, full_name)
                 if res.get("error"):
@@ -134,58 +129,39 @@ with st.sidebar:
                     st.success("🎉 Account created! Please check your email to verify.")
 
     else:
-        # -------------------------------
-        # 🔹 USER LOGGED IN
-        # -------------------------------
-        from datetime import datetime, timezone
-        import time
-
         try:
+            # ✅ Try up to 3 times to get profile (trigger delay safe)
             profile = None
-
-            # ✅ Try up to 3 times in case trigger hasn't created user profile yet
-            for _ in range(3):
+            for attempt in range(3):
                 res = supabase.table("users").select("*").eq("id", user.id).execute()
                 if res.data:
                     profile = res.data[0]
                     break
-                time.sleep(1)
+                time.sleep(1.5)
 
-            # 🧱 If profile still missing after retries
             if not profile:
-                st.warning("⏳ Your profile isn’t ready yet — try refreshing in a few seconds.")
-                full_name = user.user_metadata.get("full_name", user.email.split("@")[0])
-                st.success(f"🎉 Welcome, {full_name}!")
+                st.info("⏳ Your profile isn’t ready yet — try refreshing in a few seconds.")
+                st.success(f"🎉 Welcome, {user.user_metadata.get('full_name', user.email.split('@')[0])}!")
             else:
                 full_name = profile.get("full_name") or user.email.split("@")[0]
                 last_login = profile.get("last_login")
 
-                # 👋 Personalized greeting
                 if not last_login:
                     st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
                 else:
                     st.success(f"👋 Welcome back, {full_name}!")
 
-                # ✅ Update last_login timestamp after greeting
+                # ✅ Update last_login
                 now = datetime.now(timezone.utc).isoformat()
-                update_res = supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
-
-                if update_res.data:
-                    updated_time = update_res.data[0].get("last_login")
-                    if updated_time:
-                        st.caption(f"🕒 Last login updated to: {updated_time[:19].replace('T', ' ')} UTC")
+                supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
 
         except Exception as e:
             st.error(f"⚠️ Unable to fetch or update profile: {e}")
             st.success(f"Welcome back, {user.email} 👋")
 
-        # -------------------------------
-        # 🔹 LOGOUT BUTTON
-        # -------------------------------
         if st.button("Logout"):
             logout()
             st.rerun()
-
 
 
 page = st.sidebar.selectbox("Navigate", ["Shop", "Analytics","About"])
