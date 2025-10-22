@@ -135,21 +135,29 @@ with st.sidebar:
             if profile:
                 full_name = profile.get("full_name") or user.email.split("@")[0]
                 last_login = profile.get("last_login")
+                created_at = profile.get("created_at")
             else:
                 full_name = user.email.split("@")[0]
                 last_login = None
+                created_at = None
 
-            # 🧠 Check before updating
-            if not last_login:
+            # ✅ Determine if this is the user's first login
+            is_first_login = not last_login or (created_at and last_login == created_at)
+
+            if is_first_login:
                 st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
             else:
                 st.success(f"👋 Welcome back, {full_name}!")
 
-            # ✅ Update last login *after* greeting
+            # ✅ Update last_login AFTER greeting
             from datetime import datetime
             supabase.table("users").update({
                 "last_login": datetime.utcnow().isoformat()
             }).eq("id", user.id).execute()
+
+            # 🕒 (Optional) Display last login info
+            if last_login:
+                st.caption(f"🕒 Last login: {last_login[:19].replace('T', ' ')} UTC")
 
         except Exception as e:
             st.warning(f"⚠️ Unable to fetch user profile: {e}")
