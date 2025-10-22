@@ -2,7 +2,7 @@ import streamlit as st
 
 def show_about():
     st.markdown("---")
-    st.header("👨‍💻 About the Author")
+    st.header("👨‍💻 About the Developer")
     st.image("https://rflyaqswtuuoukmvfhfc.supabase.co/storage/v1/object/public/product-mages/IMG_0638.jpg", width=150)
 
     st.markdown("""
