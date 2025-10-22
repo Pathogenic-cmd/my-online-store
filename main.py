@@ -125,8 +125,33 @@ with st.sidebar:
                     st.error(res["error"])
                 else:
                     st.success("🎉 Account created! Please check your email to verify.")
+
     else:
-        st.success(f"Welcome back, {user.email} 👋")
+        # ✅ Fetch user's profile for personalized greeting
+        try:
+            profile_res = supabase.table("users").select("*").eq("id", user.id).execute()
+            profile = profile_res.data[0] if profile_res.data else None
+
+            if profile:
+                full_name = profile.get("full_name") or user.email.split("@")[0]
+                last_login = profile.get("last_login")
+            else:
+                full_name = user.email.split("@")[0]
+                last_login = None
+
+            # 🥳 Personalized greeting
+            if not last_login:
+                st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
+            else:
+                st.success(f"👋 Welcome back, {full_name}!")
+
+            # ✅ Update last login time
+            supabase.table("users").update({"last_login": "now()"}).eq("id", user.id).execute()
+
+        except Exception as e:
+            st.warning(f"⚠️ Unable to fetch user profile: {e}")
+            st.success(f"Welcome back, {user.email} 👋")
+
         if st.button("Logout"):
             logout()
             st.rerun()
