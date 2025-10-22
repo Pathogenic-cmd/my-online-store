@@ -104,6 +104,9 @@ with st.sidebar:
     st.markdown("## 🔐 Account")
 
     if not user:
+        # -------------------------------
+        # 🔹 LOGIN FORM
+        # -------------------------------
         with st.expander("Login", expanded=False):
             email = st.text_input("Email", key="login_email")
             password = st.text_input("Password", type="password", key="login_pw")
@@ -115,10 +118,14 @@ with st.sidebar:
                     st.success("✅ Logged in successfully!")
                     st.rerun()
 
+        # -------------------------------
+        # 🔹 SIGN UP FORM
+        # -------------------------------
         with st.expander("Create Account"):
             new_email = st.text_input("Email", key="signup_email")
             new_password = st.text_input("Password", type="password", key="signup_pw")
             full_name = st.text_input("Full Name")
+
             if st.button("Sign Up"):
                 res = signup(new_email, new_password, full_name)
                 if res.get("error"):
@@ -127,46 +134,53 @@ with st.sidebar:
                     st.success("🎉 Account created! Please check your email to verify.")
 
     else:
+        # -------------------------------
+        # 🔹 USER LOGGED IN
+        # -------------------------------
         from datetime import datetime, timezone
+        import time
 
         try:
-            # ✅ Always fetch the freshest profile data
-            profile_res = supabase.table("users").select("*").eq("id", user.id).execute()
-            profile = profile_res.data[0] if profile_res.data else None
+            # ✅ Try to fetch the user's profile (wait for Supabase trigger if needed)
+            profile = None
+            for _ in range(3):
+                res = supabase.table("users").select("*").eq("id", user.id).single().execute()
+                if res.data:
+                    profile = res.data
+                    break
+                time.sleep(1)  # wait for trigger
 
             if not profile:
-                # Fallback if user table entry is missing
-                st.warning("Profile not found. Creating a new one.")
-                supabase.table("users").insert({
-                    "id": user.id,
-                    "email": user.email,
-                    "full_name": user.user_metadata.get("full_name", user.email.split("@")[0]),
-                    "last_login": datetime.now(timezone.utc).isoformat()
-                }).execute()
-                profile = {"full_name": user.email.split("@")[0], "last_login": None}
-
-            full_name = profile.get("full_name") or user.email.split("@")[0]
-            last_login = profile.get("last_login")
-
-            # ✅ Check for first login
-            if not last_login:
-                st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
+                # If the trigger hasn’t yet created the user profile
+                st.warning("⏳ Profile not yet available. Please wait or reload.")
+                full_name = user.user_metadata.get("full_name", user.email.split("@")[0])
+                st.success(f"🎉 Welcome, {full_name}!")
             else:
-                st.success(f"👋 Welcome back, {full_name}!")
+                full_name = profile.get("full_name") or user.email.split("@")[0]
+                last_login = profile.get("last_login")
 
-            # ✅ Update last_login *after* greeting, every time
-            now = datetime.now(timezone.utc).isoformat()
-            update_res = supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
+                # 👋 Personalized greeting
+                if not last_login:
+                    st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
+                else:
+                    st.success(f"👋 Welcome back, {full_name}!")
 
-            if update_res.data:
-                updated_time = update_res.data[0].get("last_login")
-                if updated_time:
-                    st.caption(f"🕒 Last login updated to: {updated_time[:19].replace('T', ' ')} UTC")
+                # ✅ Update last_login timestamp
+                now = datetime.now(timezone.utc).isoformat()
+                update_res = supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
+
+                if update_res.data:
+                    updated_time = update_res.data[0].get("last_login")
+                    if updated_time:
+                        st.caption(f"🕒 Last login updated to: {updated_time[:19].replace('T', ' ')} UTC")
 
         except Exception as e:
-            st.error(f"⚠️ Error fetching or updating profile: {e}")
+            st.error(f"⚠️ Unable to fetch or update profile: {e}")
             st.success(f"Welcome back, {user.email} 👋")
 
+        # -------------------------------
+        # 🔹 LOGOUT BUTTON
+        # -------------------------------
         if st.button("Logout"):
             logout()
             st.rerun()
