@@ -128,6 +128,15 @@ with st.sidebar:
                 else:
                     st.success("🎉 Account created! Please check your email to verify.")
 
+                    # ✅ Clear the fields after successful sign-up
+                    st.session_state["signup_email"] = ""
+                    st.session_state["signup_pw"] = ""
+                    st.session_state["full_name"] = ""
+
+                    # Optionally rerun app to refresh form
+                    st.rerun()
+
+
     else:
         try:
             # ✅ Try up to 3 times to get profile (trigger delay safe)
