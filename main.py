@@ -146,7 +146,8 @@ with st.sidebar:
                 st.success(f"👋 Welcome back, {full_name}!")
 
             # ✅ Update last login time
-            supabase.table("users").update({"last_login": "now()"}).eq("id", user.id).execute()
+            supabase.rpc("update_last_login", {"uid": user.id}).execute()
+
 
         except Exception as e:
             st.warning(f"⚠️ Unable to fetch user profile: {e}")
