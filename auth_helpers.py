@@ -6,30 +6,37 @@ from supabase_auth.errors import AuthApiError
 supabase = init_supabase()
 
 def signup(email: str, password: str, full_name: str = None):
-    """Sign up user and create profile row."""
-    res = supabase.auth.sign_up({"email": email, "password": password})
-    
+    """Sign up a user — profile is created automatically via Supabase trigger."""
+    try:
+        # Attempt to create the auth user
+        res = supabase.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {"full_name": full_name or "New User"}  # passed into user_metadata
+            }
+        })
+    except Exception as e:
+        return {"error": f"Signup request failed: {e}"}
+
+    # Handle Supabase error response
     if hasattr(res, "error") and res.error:
         return {"error": res.error.message}
 
     user = getattr(res, "user", None)
     if not user:
-        return {"error": "User creation failed (check email confirmation or RLS policies)."}
+        return {"error": "User creation failed. Check email confirmation or RLS policies."}
 
-    # ✅ Create profile row safely
-    try:
-        supabase.table("users").upsert({
-            "id": user.id,  # must match UUID from auth
-            "email": email,
-            "full_name": full_name or "New User"
-        }).execute()
-    except Exception as e:
-        # Show error for debugging (remove after testing)
-        import streamlit as st
-        st.error(f"Supabase insert failed: {e}")
-        raise
+    # ✅ The trigger now creates the `users` row in the database automatically.
+    # We no longer call upsert() here.
+
+    # Optional: log event or display message
+    import streamlit as st
+    st.success("🎉 Account created! Please verify your email before logging in.")
+    st.balloons()
 
     return {"user": user}
+
 
 
 def login(email: str, password: str):
