@@ -130,7 +130,35 @@ with st.sidebar:
 
     else:
         try:
-            # ✅ Try up to 3 times to get profile (trigger delay safe)
+            # 🧩 DEBUG: Check what’s happening with your profile
+            st.caption("🔍 Debug info: checking if your profile exists...")
+
+            # 1️⃣ Show current logged-in user info
+            st.json({
+                "auth_user_id": user.id,
+                "auth_email": user.email,
+                "metadata": user.user_metadata,
+            })
+
+            # 2️⃣ Fetch visible rows from 'users'
+            res_all = supabase.table("users").select("*").execute()
+            if not res_all.data:
+                st.warning("⚠️ No rows visible in 'users' — possible RLS restriction.")
+            else:
+                st.write("🧱 `users` table data (visible to your session):")
+                st.json(res_all.data)
+
+            # 3️⃣ Try fetching only the current user’s row
+            res_profile = supabase.table("users").select("*").eq("id", user.id).execute()
+            if res_profile.data:
+                st.success("✅ Found your profile row:")
+                st.json(res_profile.data[0])
+            else:
+                st.warning("🚫 Could not find your profile row — trigger or RLS issue.")
+
+            # ✅ Continue with your existing logic
+            # ---------------------------------------------------
+            # Try up to 3 times to get profile (trigger delay safe)
             profile = None
             for attempt in range(3):
                 res = supabase.table("users").select("*").eq("id", user.id).execute()
@@ -162,6 +190,7 @@ with st.sidebar:
         if st.button("Logout"):
             logout()
             st.rerun()
+
 
 
 page = st.sidebar.selectbox("Navigate", ["Shop", "Analytics","About"])
