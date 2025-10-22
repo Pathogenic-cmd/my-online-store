@@ -6,30 +6,26 @@ from supabase_auth.errors import AuthApiError
 supabase = init_supabase()
 
 def signup(email: str, password: str, full_name: str = None):
-    """Sign up user and create profile row."""
-    res = supabase.auth.sign_up({"email": email, "password": password})
-    
-    if hasattr(res, "error") and res.error:
-        return {"error": res.error.message}
+    """Sign up user — profile will be auto-created by trigger."""
+    try:
+        res = supabase.auth.sign_up({
+            "email": email,
+            "password": password,
+            "options": {
+                "data": {"full_name": full_name or "New User"}
+            }
+        })
+    except Exception as e:
+        import streamlit as st
+        st.error(f"Signup failed: {e}")
+        return {"error": str(e)}
 
     user = getattr(res, "user", None)
     if not user:
-        return {"error": "User creation failed (check email confirmation or RLS policies)."}
-
-    # ✅ Create profile row safely
-    try:
-        supabase.table("users").upsert({
-            "id": user.id,  # must match UUID from auth
-            "email": email,
-            "full_name": full_name or "New User"
-        }).execute()
-    except Exception as e:
-        # Show error for debugging (remove after testing)
-        import streamlit as st
-        st.error(f"Supabase insert failed: {e}")
-        raise
+        return {"error": "Signup failed — check email confirmation or trigger"}
 
     return {"user": user}
+
 
 
 def login(email: str, password: str):
