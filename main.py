@@ -141,7 +141,7 @@ with st.sidebar:
 
             # 🥳 Personalized greeting
             if not last_login:
-                st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
+                st.success(f"🎉 Welcome, {full_name}! Glad to have you here")
             else:
                 st.success(f"👋 Welcome back, {full_name}!")
 
