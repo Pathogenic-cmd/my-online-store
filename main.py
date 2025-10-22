@@ -141,18 +141,19 @@ with st.sidebar:
         import time
 
         try:
-            # ✅ Try to fetch the user's profile (wait for Supabase trigger if needed)
             profile = None
-            for _ in range(3):
-                res = supabase.table("users").select("*").eq("id", user.id).single().execute()
-                if res.data:
-                    profile = res.data
-                    break
-                time.sleep(1)  # wait for trigger
 
+            # ✅ Try up to 3 times in case trigger hasn't created user profile yet
+            for _ in range(3):
+                res = supabase.table("users").select("*").eq("id", user.id).execute()
+                if res.data:
+                    profile = res.data[0]
+                    break
+                time.sleep(1)
+
+            # 🧱 If profile still missing after retries
             if not profile:
-                # If the trigger hasn’t yet created the user profile
-                st.warning("⏳ Profile not yet available. Please wait or reload.")
+                st.warning("⏳ Your profile isn’t ready yet — try refreshing in a few seconds.")
                 full_name = user.user_metadata.get("full_name", user.email.split("@")[0])
                 st.success(f"🎉 Welcome, {full_name}!")
             else:
@@ -165,7 +166,7 @@ with st.sidebar:
                 else:
                     st.success(f"👋 Welcome back, {full_name}!")
 
-                # ✅ Update last_login timestamp
+                # ✅ Update last_login timestamp after greeting
                 now = datetime.now(timezone.utc).isoformat()
                 update_res = supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
 
