@@ -130,36 +130,41 @@ with st.sidebar:
         from datetime import datetime, timezone
 
         try:
-            # ✅ Fetch user's profile fresh (disable cache)
+            # ✅ Always fetch the freshest profile data
             profile_res = supabase.table("users").select("*").eq("id", user.id).execute()
             profile = profile_res.data[0] if profile_res.data else None
 
-            if profile:
-                full_name = profile.get("full_name") or user.email.split("@")[0]
-                last_login = profile.get("last_login")
-                created_at = profile.get("created_at")
-            else:
-                full_name = user.email.split("@")[0]
-                last_login = None
-                created_at = None
+            if not profile:
+                # Fallback if user table entry is missing
+                st.warning("Profile not found. Creating a new one.")
+                supabase.table("users").insert({
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.user_metadata.get("full_name", user.email.split("@")[0]),
+                    "last_login": datetime.now(timezone.utc).isoformat()
+                }).execute()
+                profile = {"full_name": user.email.split("@")[0], "last_login": None}
 
-            # ✅ Determine first-time login more reliably
-            if last_login is None:
+            full_name = profile.get("full_name") or user.email.split("@")[0]
+            last_login = profile.get("last_login")
+
+            # ✅ Check for first login
+            if not last_login:
                 st.success(f"🎉 Welcome, {full_name}! Glad to have you here for the first time.")
             else:
                 st.success(f"👋 Welcome back, {full_name}!")
 
-            # ✅ Update last_login after greeting
+            # ✅ Update last_login *after* greeting, every time
             now = datetime.now(timezone.utc).isoformat()
-            supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
+            update_res = supabase.table("users").update({"last_login": now}).eq("id", user.id).execute()
 
-            # ✅ Verify update by re-fetching
-            updated = supabase.table("users").select("last_login").eq("id", user.id).execute()
-            if updated.data and updated.data[0].get("last_login"):
-                st.caption(f"🕒 Last login: {updated.data[0]['last_login'][:19].replace('T',' ')} UTC")
+            if update_res.data:
+                updated_time = update_res.data[0].get("last_login")
+                if updated_time:
+                    st.caption(f"🕒 Last login updated to: {updated_time[:19].replace('T', ' ')} UTC")
 
         except Exception as e:
-            st.warning(f"⚠️ Unable to fetch user profile: {e}")
+            st.error(f"⚠️ Error fetching or updating profile: {e}")
             st.success(f"Welcome back, {user.email} 👋")
 
         if st.button("Logout"):
