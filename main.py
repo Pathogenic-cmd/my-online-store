@@ -121,29 +121,12 @@ with st.sidebar:
             new_email = st.text_input("Email", key="signup_email")
             new_password = st.text_input("Password", type="password", key="signup_pw")
             full_name = st.text_input("Full Name")
-            # --- Sign Up form ---
-            new_email = st.text_input("Email", key="signup_email")
-            new_password = st.text_input("Password", type="password", key="signup_pw")
-            full_name = st.text_input("Full Name", key="signup_full_name")
-
             if st.button("Sign Up"):
                 res = signup(new_email, new_password, full_name)
                 if res.get("error"):
                     st.error(res["error"])
                 else:
                     st.success("🎉 Account created! Please check your email to verify.")
-                    st.session_state["reset_signup_fields"] = True
-                    st.rerun()
-
-            # --- Reset fields safely AFTER rerun ---
-            if st.session_state.get("reset_signup_fields"):
-                st.session_state["signup_email"] = ""
-                st.session_state["signup_pw"] = ""
-                st.session_state["signup_full_name"] = ""
-                st.session_state["reset_signup_fields"] = False
-                st.rerun()
-
-
 
     else:
         try:
